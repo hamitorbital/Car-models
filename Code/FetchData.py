@@ -6,9 +6,9 @@ from bs4 import BeautifulSoup
 
 mydb = mysql.connector.connect(
     host="127.0.0.1",
-    user="user",
-    passwd="password",
-    database="database",
+    user="user", # your database username
+    passwd="password", # your database password
+    database="database", # your database name
 )
 
 list_items, information, list_years = [], [], []
@@ -22,7 +22,7 @@ def information_regex(item):
 
 
 def get_information(url):
-    """ find cars informations from html """
+    # find cars informations from html code
     response = requests.get(url)
     text = response.text
     homes = BeautifulSoup(text, 'html.parser')
@@ -30,7 +30,7 @@ def get_information(url):
     for item in cars_tag:
         information_regex(item)        
 
-
+# --- find cars type from follow list ---
 models = ['sedan', 'coupe', 'suv', 'wagon', 'convertible', 'van', 'truck']
 for model in models:
     for year in range(2017, 2020):
@@ -41,7 +41,7 @@ for model in models:
         UrlName = 'https://www.cars.com/research/{}/{}/?pageNum=0&rpp=110'
         url = UrlName.format(model, year)
         get_information(url)
-
+# --- extract data form html code ---
 for info in list_items:
     if 'MSRP' in info:
         regex = re.findall(r'\d+ .* STARTING MSRP \$\d+\,\d+', info)
@@ -52,12 +52,12 @@ for info in list_items:
         regex = re.findall(r, info)
         for item in regex:
             information.append(item.split('CURRENT LISTING PRICE'))
-
+# --- Extracting year of production and model of codes ---
 for i in information:
     num = i[0].split(maxsplit= 1)
     list_years.append(int(num[0]))
     list_models.append(num[1].strip())
-
+# --- extracting prices from codes ---
 for pri in information:
     item = pri[1].replace('$', '')
     item = item.split('-')
@@ -67,13 +67,15 @@ for pri in information:
     if len(item) == 2:
         item2 = item[1].split(',')
         list_prices.append(int(''.join(item2)))
+
+# --- coupling extracted data together ---
 zip_item = list(zip(list_models, list_years, list_prices))
 mycursor = mydb.cursor()
-
+# --- storing data to database
 for item in zip_item:
         car_model = item[0]
         car_year = item[1]
-        car_price = item[2]
+        car_price = item[2] # --- insted tablename insert your tablename ---
         sql = "INSERT IGNORE INTO tablename (model, year, price)\
                VALUES (%s, %s, %s)"
         val = [(car_model, car_year, car_price)]
